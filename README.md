@@ -43,11 +43,10 @@ The following stack was validated end to end before development started:
 
 ## Quick start
 
-```bash
 git clone <repository-url>
 cd sysops-test
 vagrant up
-```
+
 
 That is the whole setup. The provisioner installs Docker Engine and Compose v2 inside the VM, then deploys the three services.
 
@@ -61,7 +60,29 @@ That is the whole setup. The provisioner installs Docker Engine and Compose v2 i
 
 ## Repository layout
 
-<!-- TODO: one line per directory -->
+.
+├── Vagrantfile          VM definition and provisioner configuration
+├── playbook.yml         Entry point: ordered list of roles
+├── requirements.yml     Ansible collections installed at provisioning time
+├── group_vars/
+│   └── all.yml          Shared variables (paths, network name, replica counts)
+└── roles/               One role per component
+
+
+The playbook holds no tasks of its own: it only declares which roles run and in which order. Each role is self-contained, owning its tasks, templates and handlers.
+
+<!-- TODO: expand once the roles are in place -->
+
+---
+
+## Guest access
+
+The VM forwards guest port 80 to host port 8080, so the load balancer is reachable at `http://localhost:8080` from the host. Application containers are not published to the host at all — HAProxy is the only entry point.
+
+vagrant ssh          # shell into the VM
+vagrant provision    # re-run the playbook without recreating the VM
+vagrant destroy -f   # tear everything down
+
 
 ---
 

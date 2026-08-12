@@ -1,0 +1,2 @@
+apps_dir: /opt/poc
+docker_network: poc_net

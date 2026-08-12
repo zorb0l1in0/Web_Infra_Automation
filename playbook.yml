@@ -1,4 +1,5 @@
 - name: Provision PoC infrastructure
   hosts: all
   become: true
-  roles: []
+  roles:
+    - docker
