@@ -1,0 +1,4 @@
+- name: restart statics
+  community.docker.docker_compose_v2:
+    project_src: "{{ apps_dir }}/statics"
+    state: restarted

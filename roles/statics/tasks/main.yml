@@ -1,0 +1,30 @@
+- name: Create statics directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ apps_dir }}/statics"
+    - "{{ apps_dir }}/statics/conf"
+
+- name: Render nginx configuration
+  ansible.builtin.template:
+    src: nginx-default.conf.j2
+    dest: "{{ apps_dir }}/statics/conf/nginx-1.conf"
+    mode: "0644"
+  vars:
+    server_id: 0
+  notify: restart statics
+
+- name: Render statics compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ apps_dir }}/statics/docker-compose.yml"
+    mode: "0644"
+  notify: restart statics
+
+- name: Deploy statics stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ apps_dir }}/statics"
+    state: present
+    remove_orphans: true

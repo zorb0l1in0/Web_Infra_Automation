@@ -1,0 +1,13 @@
+services:
+  nginx-1:
+    image: nginx:latest
+    container_name: nginx-1
+    restart: unless-stopped
+    volumes:
+      - ./conf/nginx-1.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - {{ docker_network }}
+
+networks:
+  {{ docker_network }}:
+    external: true

@@ -1,0 +1,9 @@
+server {
+    listen 80;
+    server_name _;
+
+    location /statics {
+        default_type text/plain;
+        return 200 "Response from Server {{ server_id }}\n";
+    }
+}
