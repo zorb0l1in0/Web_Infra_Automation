@@ -1,0 +1,15 @@
+services:
+  haproxy:
+    image: haproxy:3.0
+    container_name: haproxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - {{ docker_network }}
+
+networks:
+  {{ docker_network }}:
+    external: true

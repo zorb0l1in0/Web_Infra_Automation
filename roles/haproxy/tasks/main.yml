@@ -1,0 +1,25 @@
+- name: Create haproxy directory
+  ansible.builtin.file:
+    path: "{{ apps_dir }}/haproxy"
+    state: directory
+    mode: "0755"
+
+- name: Render haproxy configuration
+  ansible.builtin.template:
+    src: haproxy.cfg.j2
+    dest: "{{ apps_dir }}/haproxy/haproxy.cfg"
+    mode: "0644"
+  notify: restart haproxy
+
+- name: Render haproxy compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ apps_dir }}/haproxy/docker-compose.yml"
+    mode: "0644"
+  notify: restart haproxy
+
+- name: Deploy haproxy stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ apps_dir }}/haproxy"
+    state: present
+    remove_orphans: true
