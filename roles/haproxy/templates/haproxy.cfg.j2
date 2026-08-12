@@ -20,9 +20,16 @@ frontend fe_web
 
 backend be_echo
     balance roundrobin
-    server echo1 echo-1:8080 check
+{% for i in range(1, echo_replicas + 1) %}
+    server echo{{ i }} echo-{{ i }}:8080 check
+{% endfor %}
 
 backend be_nginx
-    balance roundrobin
-    server nginx1 nginx-1:80 check
+    balance uri
+    hash-type consistent
+{% for i in range(1, nginx_replicas + 1) %}
+    server nginx{{ i }} nginx-{{ i }}:80 check
+{% endfor %}
+
+
 

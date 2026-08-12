@@ -82,7 +82,40 @@ Expected output:
 
 On Windows PowerShell, use `curl.exe` — the bare `curl` is an alias for `Invoke-WebRequest` and does not accept these flags.
 
-<!-- TODO: sticky routing and scaling checks once part 3 lands -->
+### Load balancing behaviour
+
+The two backends deliberately use different algorithms, so they behave differently under repeated requests.
+
+```bash
+# Round robin across the EchoServer replicas — the hostname rotates
+for i in $(seq 6); do curl -s localhost:8080/api | grep ^Hostname; done
+
+# Sticky routing — the same path always lands on the same Nginx replica
+for i in $(seq 6); do curl -s localhost:8080/statics/foo; done
+
+# Different paths hash to different replicas
+for p in alpha beta gamma delta epsilon; do
+  echo -n "$p -> "; curl -s localhost:8080/statics/$p
+done
+```
+
+Observed with `echo_replicas: 3` and `nginx_replicas: 3`:
+
+- `/api` cycles through all three EchoServer containers in order and repeats.
+- `/statics/foo` returns `Response from Server 1` on every request.
+- The five sample paths spread across all three replicas (`2, 3, 1, 2, 3`), and the mapping is stable across runs.
+
+### Scaling
+
+Replica counts live in `group_vars/all.yml`. Change either value and re-provision — no template or task edits required.
+
+```bash
+# edit nginx_replicas, then:
+vagrant provision
+vagrant ssh -c "docker ps --format '{{.Names}}'"
+```
+
+Scaling down removes the surplus containers rather than leaving them orphaned.
 
 ---
 
@@ -132,10 +165,42 @@ The trade-off is that the SSH-based, agentless connection model normally used in
 
 `ansible-core` is pinned and installed via pip rather than taken from the Ubuntu repositories, because the distribution package on Jammy lags behind the version required by recent `community.docker` releases.
 
-<!-- TODO: remaining design decisions — shared Docker network, compose templating, balance uri -->
+### Three Compose projects on one shared Docker network
+
+The test asks for three separate Compose deployments, so the network they share is created once by the `docker` role and referenced as `external: true` by all three. Without this, each project would create its own isolated network and HAProxy could never reach the backends.
+
+Sharing a network means containers resolve each other by name through Docker's embedded DNS: HAProxy points at `echo-1:8080` and `nginx-1:80` with no hardcoded IPs and no dependency on start-up order.
+
+### HAProxy is the only published port
+
+Application containers publish nothing to the host. The single `80:80` mapping on HAProxy, forwarded to host port 8080 by Vagrant, is the only way in. Backends are reachable exclusively from inside the Docker network, which keeps the exposed surface to one process.
+
+### Configuration changes trigger a restart
+
+Both the Nginx config and `haproxy.cfg` are bind-mounted read-only. Neither process re-reads its configuration on its own, so the roles notify a handler that restarts the stack whenever a rendered template changes. Without it, editing a template and re-running the playbook would silently have no effect.
+
+### Path affinity via URI hashing, not session state
+
+The `/statics` backend uses `balance uri` with `hash-type consistent`. HAProxy hashes the request URI and maps it deterministically onto a server, so a given path always reaches the same replica — without cookies, session tables or any shared state between requests.
+
+`hash-type consistent` changes how that hash becomes a choice. The default map-based mode divides the hash by the number of servers, so adding or removing one reshuffles nearly every path-to-server assignment. Consistent hashing remaps only the minimum necessary fraction, which in production means a scale-up does not invalidate every replica's local cache at once.
+
+The `/api` backend stays on `roundrobin`. EchoServer is stateless and the brief asks for no affinity there, so even distribution is the better fit. The two algorithms coexist because the two workloads have different requirements, not because one is generally better.
+
+### Replica counts are variables, not duplicated code
+
+Both stacks render their Compose file from a single Jinja2 template that loops over a replica count. Nginx additionally renders one config file per instance, injecting the loop index as the server id, so each replica reports which one answered. Going from one replica to five is a one-line change in `group_vars/all.yml`.
 
 ---
 
 ## Known limitations
 
-<!-- TODO: to be completed -->
+This is a proof of concept and the following are deliberate simplifications, not oversights.
+
+- **`nginx:latest` is not pinned.** The brief specifies that tag; production would pin a digest for reproducibility.
+- **No TLS.** The load balancer terminates plain HTTP only.
+- **Health checks are TCP-only.** `check` verifies the port accepts connections, not that the application is healthy. `option httpchk` would be the production choice.
+- **HAProxy resolves backend names once, at startup.** There is no `resolvers` section, so a container recreated with a different IP would not be picked up until HAProxy restarts. In this project every topology change also rewrites `haproxy.cfg` and triggers the restart handler, so the gap never opens — but that is a property of the workflow, not a guarantee of the design.
+- **Single host, no high availability.** HAProxy is itself a single point of failure.
+- **No resource limits, log aggregation or secret management.**
+- **Scale-down is not graceful.** Surplus containers are removed without draining in-flight connections.
