@@ -1,10 +1,12 @@
 services:
-  echo-1:
+{% for i in range(1, echo_replicas + 1) %}
+  echo-{{ i }}:
     image: registry.k8s.io/echoserver:1.8
-    container_name: echo-1
+    container_name: echo-{{ i }}
     restart: unless-stopped
     networks:
       - {{ docker_network }}
+{% endfor %}
 
 networks:
   {{ docker_network }}:

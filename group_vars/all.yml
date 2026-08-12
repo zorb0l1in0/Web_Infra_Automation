@@ -1,2 +1,5 @@
 apps_dir: /opt/poc
 docker_network: poc_net
+
+echo_replicas: 3
+nginx_replicas: 3
