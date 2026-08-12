@@ -9,6 +9,8 @@ Vagrant.configure("2") do |config|
     vb.memory = 2048
     vb.cpus = 2
   end
+
+  config.vm.boot_timeout = 600
   
   # Provisioning with Ansible
   config.vm.provision "ansible_local" do |ansible|
