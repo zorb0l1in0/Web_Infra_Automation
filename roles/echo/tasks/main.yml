@@ -1,0 +1,17 @@
+- name: Create echo app directory
+  ansible.builtin.file:
+    path: "{{ apps_dir }}/echo"
+    state: directory
+    mode: "0755"
+
+- name: Render echo compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ apps_dir }}/echo/docker-compose.yml"
+    mode: "0644"
+
+- name: Deploy echo stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ apps_dir }}/echo"
+    state: present
+    remove_orphans: true

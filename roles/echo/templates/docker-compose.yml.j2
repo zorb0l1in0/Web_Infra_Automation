@@ -1,0 +1,11 @@
+services:
+  echo-1:
+    image: registry.k8s.io/echoserver:1.8
+    container_name: echo-1
+    restart: unless-stopped
+    networks:
+      - {{ docker_network }}
+
+networks:
+  {{ docker_network }}:
+    external: true
