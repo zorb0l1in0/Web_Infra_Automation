@@ -7,15 +7,16 @@
     - "{{ apps_dir }}/statics"
     - "{{ apps_dir }}/statics/conf"
 
-- name: Render nginx configuration
+- name: Render one nginx configuration per instance
   ansible.builtin.template:
     src: nginx-default.conf.j2
-    dest: "{{ apps_dir }}/statics/conf/nginx-1.conf"
+    dest: "{{ apps_dir }}/statics/conf/nginx-{{ item }}.conf"
     mode: "0644"
+  loop: "{{ range(1, nginx_replicas + 1) | list }}"
   vars:
-    server_id: 0
+    server_id: "{{ item }}"
   notify: restart statics
-
+  
 - name: Render statics compose file
   ansible.builtin.template:
     src: docker-compose.yml.j2
