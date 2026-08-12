@@ -54,3 +54,8 @@
     name: vagrant
     groups: docker
     append: true
+
+- name: Create shared Docker network
+  community.docker.docker_network:
+    name: "{{ docker_network }}"
+    state: present
