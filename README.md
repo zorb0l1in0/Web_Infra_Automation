@@ -22,6 +22,8 @@ Only three tools are required on the host machine. **Ansible is not installed on
 | Git | 2.x | 2.55.0 |
 
 After installing VirtualBox, a system reboot is needed.
+
+
 Roughly 4 GB of free RAM and 5 GB of disk space are needed for the guest VM and container images.
 
 ### Verified environment
