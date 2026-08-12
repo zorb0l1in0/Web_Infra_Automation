@@ -13,7 +13,7 @@ Everything is deployed with a single `vagrant up`.
 
 ## Prerequisites
 
-Only two tools are required on the host machine. **Ansible is not installed on the host** — it runs inside the VM (see [Design decisions](#design-decisions)).
+Only three tools are required on the host machine. **Ansible is not installed on the host** — it runs inside the VM (see [Design decisions](#design-decisions)).
 
 | Tool | Minimum | Verified with |
 |---|---|---|
@@ -21,6 +21,7 @@ Only two tools are required on the host machine. **Ansible is not installed on t
 | VirtualBox | 7.0 | 7.2.14 r174565 |
 | Git | 2.x | 2.55.0 |
 
+After installing VirtualBox, a system reboot is needed.
 Roughly 4 GB of free RAM and 5 GB of disk space are needed for the guest VM and container images.
 
 ### Verified environment
@@ -44,8 +45,8 @@ The following stack was validated end to end before development started:
 ## Quick start
 
 ```bash
-git clone <repository-url>
-cd sysops-test
+git clone https://github.com/zorb0l1in0/Web_Infra_Automation
+cd Web_Infra_Automation
 vagrant up
 ```
 
